@@ -294,10 +294,14 @@ sendBtn.onclick = send;
 textIn.addEventListener('keydown', e => { if(e.key==='Enter') send(); });
 
 $('#newSession').onclick = async () => {
-  await fetch(`${API_BASE}/api/new_session`, {method:'POST'});
-  stream.innerHTML = `<div class="hint">新会话已开始 — 可见对话已清空，<b>记忆库保留</b>。<br>
-    现在再记一次刚教过的菜，它会命中个人记忆。</div>`;
-  cardCounter = 0; textIn.focus();
+  try {
+    await fetch(`${API_BASE}/api/new_session`, {method:'POST'});
+    stream.innerHTML = `<div class="hint">新会话已开始 — 可见对话已清空，<b>记忆库保留</b>。<br>
+      现在再记一次刚教过的菜，它会命中个人记忆。</div>`;
+    cardCounter = 0; textIn.focus();
+  } catch(err) {
+    stream.innerHTML = `<div class="card"><div class="oil">出错了：${esc(err.message)}</div></div>`;
+  }
 };
 
 $('#memToggle').onclick = () => $('#memPanel').classList.toggle('open');
