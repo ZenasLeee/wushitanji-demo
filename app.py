@@ -23,7 +23,10 @@ from quantifier import quantifier_parse
 from estimate import estimate
 
 app = Flask(__name__)
-CORS(app, origins=["capacitor://localhost", "http://localhost"])
+CORS(app,
+     origins=["capacitor://localhost", "http://localhost"],
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type"])
 
 _UNPARSEABLE = {"无法解析", "__PARSE_FAILED__"}
 
