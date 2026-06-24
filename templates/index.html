@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>吾食谈记 · Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f4f5f7; color: #1f2329; height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    background: #2b6c5a; color: #fff; padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 17px; font-weight: 600; }
+  header .sub { font-size: 12px; opacity: .8; margin-left: 10px; font-weight: 400; }
+  #newSession {
+    background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.35);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  #newSession:hover { background: rgba(255,255,255,.28); }
+  .header-actions { display: flex; gap: 8px; }
+  .mem-toggle { display: none; }
+  main { flex: 1; display: flex; overflow: hidden; }
+
+  /* 对话区 */
+  #convo { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #stream { flex: 1; overflow-y: auto; padding: 18px 22px; }
+  .msg-user {
+    align-self: flex-end; background: #2b6c5a; color: #fff; padding: 8px 13px;
+    border-radius: 12px 12px 2px 12px; max-width: 70%; margin: 6px 0 6px auto; width: fit-content;
+    font-size: 14px;
+  }
+  .hint { color: #9aa0a6; font-size: 13px; text-align: center; margin-top: 40px; line-height: 1.9; }
+  .hint code { background: #e8eaed; padding: 1px 6px; border-radius: 4px; color: #2b6c5a; }
+
+  /* 结果卡 */
+  .card {
+    background: #fff; border: 1px solid #e6e8eb; border-radius: 10px;
+    padding: 13px 15px; margin: 8px 0; max-width: 78%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .card .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card .food { font-size: 15px; font-weight: 600; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .badge.hit { background: #e3f5ec; color: #1e7d52; }
+  .badge.pending { background: #fdf0d9; color: #b9760a; }
+  .badge.fuzzy { background: #eef0fd; color: #4a52b3; }
+  .card .grams { font-size: 22px; font-weight: 700; color: #1f2329; margin: 8px 0 2px; }
+  .card .grams small { font-size: 12px; font-weight: 400; color: #9aa0a6; margin-left: 6px; }
+  .card .decomp { font-size: 12px; color: #6b7177; }
+  .card .nutri { display: flex; gap: 16px; margin-top: 9px; font-size: 12px; color: #5f6368;
+    border-top: 1px solid #f0f1f3; padding-top: 8px; }
+  .card .nutri b { color: #1f2329; font-weight: 600; font-size: 13px; }
+  .card .oil { font-size: 12px; color: #b9760a; margin-top: 6px; }
+  .card .actions { margin-top: 10px; }
+  .card .actions button {
+    background: #fff; border: 1px solid #cdd0d4; color: #3c4043; padding: 4px 11px;
+    border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .card .actions button:hover { border-color: #2b6c5a; color: #2b6c5a; }
+
+  /* 纠正面板 */
+  .correct { margin-top: 10px; background: #fafbfc; border: 1px dashed #cdd0d4; border-radius: 8px; padding: 11px; }
+  .correct label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 5px; }
+  .correct input[type=number] { width: 90px; padding: 5px 8px; border: 1px solid #cdd0d4; border-radius: 6px; font-size: 14px; }
+  .correct .opts { margin: 9px 0; display: flex; flex-direction: column; gap: 5px; }
+  .correct .opts label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #3c4043; cursor: pointer; }
+  .correct .opts label.disabled { color: #b0b4b8; cursor: not-allowed; }
+  .correct .save { background: #2b6c5a; color: #fff; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .correct .cancel { background: none; border: none; color: #9aa0a6; cursor: pointer; font-size: 13px; margin-left: 8px; }
+
+  /* 输入条 */
+  #inputBar { padding: 14px 22px; border-top: 1px solid #e6e8eb; background: #fff; display: flex; gap: 10px; }
+  #inputBar input { flex: 1; padding: 11px 14px; border: 1px solid #cdd0d4; border-radius: 8px; font-size: 14px; }
+  #inputBar input:focus { outline: none; border-color: #2b6c5a; }
+  #inputBar button { background: #2b6c5a; color: #fff; border: none; padding: 0 22px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  #inputBar button:disabled { opacity: .5; cursor: default; }
+
+  /* 记忆库面板 */
+  #memPanel { width: 290px; background: #fff; border-left: 1px solid #e6e8eb; display: flex; flex-direction: column; }
+  #memPanel .head { padding: 14px 16px; border-bottom: 1px solid #e6e8eb; }
+  #memPanel .head h2 { font-size: 14px; font-weight: 600; }
+  #memPanel .head p { font-size: 11px; color: #9aa0a6; margin-top: 3px; }
+  #memList { flex: 1; overflow-y: auto; padding: 8px 12px; }
+  .mem-empty { color: #b0b4b8; font-size: 12px; text-align: center; margin-top: 26px; line-height: 1.8; }
+  .mem-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 10px;
+    border: 1px solid #eceef0; border-radius: 8px; margin-bottom: 7px; }
+  .mem-item .k { font-size: 13px; }
+  .mem-item .k b { color: #2b6c5a; }
+  .mem-item .v { font-size: 13px; color: #1f2329; font-weight: 600; }
+  .mem-item .del { background: none; border: none; color: #c0c4c8; cursor: pointer; font-size: 15px; padding: 0 4px; }
+  .mem-item .del:hover { color: #d9534f; }
+  .mem-item .v-wrap { display: flex; align-items: center; gap: 8px; }
+
+  @media (max-width: 600px) {
+    header { position: relative; z-index: 101; }
+    .mem-toggle {
+      display: inline-block;
+      background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.35);
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    }
+    #convo { width: 100%; }
+    .card { max-width: 95%; }
+    #memPanel {
+      display: none;
+      position: fixed; top: 0; right: 0; bottom: 0; width: 85%; max-width: 320px;
+      box-shadow: -2px 0 12px rgba(0,0,0,.15); z-index: 100;
+    }
+    #memPanel.open { display: flex; }
+    #inputBar input, .correct input[type=number] { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>吾食谈记 <span class="sub">量词映射 · 纠正复用 demo</span></h1></div>
+  <div class="header-actions">
+    <button id="memToggle" class="mem-toggle">记忆库</button>
+    <button id="newSession">+ 新会话</button>
+  </div>
+</header>
+<main>
+  <section id="convo">
+    <div id="stream">
+      <div class="hint" id="welcomeHint">
+        试试：<code>中午吃了一拳米饭</code><br>
+        纠正成你的量 → 勾「以后都按这个」 → 点「新会话」 → 再记一次<br>
+        它会记住。两拳米饭会自动 ×2。
+      </div>
+    </div>
+    <div id="inputBar">
+      <input id="text" placeholder="用一句话记一餐，如「晚饭一碗米饭、一份宫保鸡丁」" autocomplete="off">
+      <button id="send">记录</button>
+    </div>
+  </section>
+  <aside id="memPanel">
+    <div class="head">
+      <h2>个人记忆库</h2>
+      <p>key = (食物名, 单位) → 每单位基准克重 · 跨会话持久</p>
+    </div>
+    <div id="memList"></div>
+  </aside>
+</main>
+
+<script>
+const API_BASE = '';  // 留空=同源相对路径（本机 Flask）；部署后填 Railway 真实 URL，如 'https://your-app.railway.app'
+const $ = s => document.querySelector(s);
+const stream = $('#stream'), textIn = $('#text'), sendBtn = $('#send');
+
+function esc(s){ return (s+'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+async function loadMemory(){
+  const r = await fetch(`${API_BASE}/api/memory`); const {entries} = await r.json();
+  const list = $('#memList');
+  if(!entries.length){ list.innerHTML = '<div class="mem-empty">还没有记住任何量词映射。<br>纠正一道菜并勾「以后都按这个」即可。</div>'; return; }
+  list.innerHTML = entries.map(e => `
+    <div class="mem-item">
+      <span class="k">(<b>${esc(e.food)}</b>, ${esc(e.unit)})</span>
+      <span class="v-wrap"><span class="v">${e.base_gram}g</span>
+      <button class="del" title="删除" onclick="delMem('${esc(e.food)}','${esc(e.unit)}')">×</button></span>
+    </div>`).join('');
+}
+async function delMem(food, unit){
+  await fetch(`${API_BASE}/api/memory/delete`, {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({food, unit})});
+  loadMemory();
+}
+
+function nutriRow(n){
+  return `<div class="nutri">
+    <span><b>${n.kcal}</b> 千卡</span>
+    <span>蛋白 <b>${n.protein}</b>g</span>
+    <span>脂肪 <b>${n.fat}</b>g</span>
+    <span>碳水 <b>${n.carb}</b>g</span></div>`;
+}
+
+function cardHTML(d, idx){
+  let badge;
+  if(d.hit) badge = '<span class="badge hit">命中个人记忆</span>';
+  else if(d.fuzzy) badge = '<span class="badge fuzzy">模糊·待确认</span>';
+  else badge = '<span class="badge pending">待确认</span>';
+
+  let decomp = '';
+  if(d.unit){
+    const mult = d.multiplier;
+    decomp = `<div class="decomp">基准 ${d.base_gram}g × ${mult} ${esc(d.unit)}` +
+             (d.hit ? '（来自记忆）' : '（AI 估）') + `</div>`;
+  } else {
+    decomp = `<div class="decomp">「${esc(d.raw_quantifier)}」无可复用单位 · AI 估单份</div>`;
+  }
+
+  const canCorrect = true;
+  return `<div class="card" id="card-${idx}">
+    <div class="top"><span class="food">${esc(d.food)}</span>${badge}</div>
+    <div class="grams">${d.grams}g</div>
+    ${decomp}
+    ${d.oil ? `<div class="oil">油量：${esc(d.oil)}（demo 桩，不入星）</div>` : ''}
+    ${nutriRow(d.nutrition)}
+    <div class="actions"><button onclick="openCorrect(${idx})">纠正分量</button></div>
+    <div class="correct-slot"></div>
+  </div>`;
+}
+
+const cardData = {};
+
+function openCorrect(idx){
+  const d = cardData[idx];
+  const slot = $('#card-'+idx+' .correct-slot');
+  if(slot.innerHTML){ slot.innerHTML=''; return; }
+  const rememberDisabled = !d.can_remember;
+  slot.innerHTML = `<div class="correct">
+    <label>这一餐的实际克重</label>
+    <input type="number" id="g-${idx}" value="${d.grams}" min="1" step="10"> g
+    <div class="opts">
+      <label><input type="radio" name="scope-${idx}" value="once" checked> 仅本次</label>
+      <label class="${rememberDisabled?'disabled':''}">
+        <input type="radio" name="scope-${idx}" value="always" ${rememberDisabled?'disabled':''}>
+        以后这道菜（${esc(d.food)}·${d.unit?esc(d.unit):'—'}）都按这个
+        ${rememberDisabled?'<span style="font-size:11px">（此量词不可复用）</span>':''}
+      </label>
+    </div>
+    <button class="save" onclick="saveCorrect(${idx})">保存</button>
+    <button class="cancel" onclick="openCorrect(${idx})">取消</button>
+  </div>`;
+}
+
+async function saveCorrect(idx){
+  const d = cardData[idx];
+  const grams = parseFloat($('#g-'+idx).value);
+  if(!grams || grams<=0) return;
+  const scope = document.querySelector(`input[name=scope-${idx}]:checked`).value;
+
+  // 更新当前卡的显示克数（纠正自动联动营养：按比例缩放）
+  const ratio = grams / d.grams;
+  d.grams = Math.round(grams);
+  $('#card-'+idx+' .grams').textContent = d.grams + 'g';
+  const n = d.nutrition;
+  ['kcal','protein','fat','carb'].forEach(k => n[k] = Math.round(n[k]*ratio));
+  $('#card-'+idx+' .nutri').outerHTML = nutriRow(n);
+
+  if(scope === 'always' && d.can_remember){
+    const base = Math.round(grams / d.multiplier);
+    await fetch(`${API_BASE}/api/remember`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({food: d.food, unit: d.unit, base_gram: base})});
+    // 徽章转「命中个人记忆」，分解行更新
+    d.hit = true; d.base_gram = base;
+    $('#card-'+idx+' .top').innerHTML =
+      `<span class="food">${esc(d.food)}</span><span class="badge hit">命中个人记忆</span>`;
+    $('#card-'+idx+' .decomp').innerHTML =
+      `基准 ${base}g × ${d.multiplier} ${esc(d.unit)}（来自记忆）`;
+    loadMemory();
+  }
+  $('#card-'+idx+' .correct-slot').innerHTML = '';
+}
+
+let cardCounter = 0;
+async function send(){
+  const text = textIn.value.trim();
+  if(!text) return;
+  $('#welcomeHint')?.remove();
+  textIn.value=''; sendBtn.disabled = true;
+
+  const u = document.createElement('div'); u.className='msg-user'; u.textContent = text;
+  stream.appendChild(u); stream.scrollTop = stream.scrollHeight;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/record`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text})});
+    const data = await r.json();
+    if(data.unparseable || !data.dishes.length){
+      const e = document.createElement('div'); e.className='card';
+      e.innerHTML = '<div class="decomp">没解析出具体的菜（如「随便扒拉了几口」），这一条不记录。</div>';
+      stream.appendChild(e);
+    } else {
+      for(const d of data.dishes){
+        const idx = cardCounter++; cardData[idx] = d;
+        const wrap = document.createElement('div'); wrap.innerHTML = cardHTML(d, idx);
+        stream.appendChild(wrap.firstElementChild);
+      }
+    }
+  } catch(err){
+    const e = document.createElement('div'); e.className='card';
+    e.innerHTML = '<div class="oil">出错了：'+esc(err.message)+'</div>';
+    stream.appendChild(e);
+  }
+  stream.scrollTop = stream.scrollHeight;
+  sendBtn.disabled = false; textIn.focus();
+}
+
+sendBtn.onclick = send;
+textIn.addEventListener('keydown', e => { if(e.key==='Enter') send(); });
+
+$('#newSession').onclick = async () => {
+  await fetch(`${API_BASE}/api/new_session`, {method:'POST'});
+  stream.innerHTML = `<div class="hint">新会话已开始 — 可见对话已清空，<b>记忆库保留</b>。<br>
+    现在再记一次刚教过的菜，它会命中个人记忆。</div>`;
+  cardCounter = 0; textIn.focus();
+};
+
+$('#memToggle').onclick = () => $('#memPanel').classList.toggle('open');
+
+loadMemory();
+textIn.focus();
+</script>
+</body>
+</html>

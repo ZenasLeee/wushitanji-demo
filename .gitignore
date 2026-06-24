@@ -1,0 +1,5 @@
+.env
+__pycache__/
+memory_store.db
+server.log
+server.err.log
