@@ -146,7 +146,7 @@
 </main>
 
 <script>
-const API_BASE = '';  // 留空=同源相对路径（本机 Flask）；部署后填 Railway 真实 URL，如 'https://your-app.railway.app'
+const API_BASE = 'https://wushitanji.up.railway.app';  // 已部署：前后端同域时此值不影响行为，留着是为 APK 打包后跨域调用做准备
 const $ = s => document.querySelector(s);
 const stream = $('#stream'), textIn = $('#text'), sendBtn = $('#send');
 
