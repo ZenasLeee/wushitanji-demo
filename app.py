@@ -24,7 +24,7 @@ from estimate import estimate
 
 app = Flask(__name__)
 CORS(app,
-     origins=["capacitor://localhost", "http://localhost"],
+     origins=["capacitor://localhost", "https://localhost", "http://localhost"],
      methods=["GET", "POST", "OPTIONS"],
      allow_headers=["Content-Type"])
 
